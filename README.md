@@ -40,6 +40,7 @@ If you prefer to run the commands manually:
 
 1. Start PostgreSQL with Podman:
 ```bash
+# You can also use docker if that is your preferred container engine, just replace the `podman` binary with `docker`
 podman run -d \
   --name spring-postgres \
   -e POSTGRES_USER=postgres \
