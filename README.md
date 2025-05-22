@@ -2,6 +2,8 @@
 
 A simple Spring Boot WebFlux application with PostgreSQL database using Podman.
 
+See the [com.example.counter](./src/main/java/com/example/counter/) package for the most relevant code.
+
 ## Prerequisites
 
 - Java 21
@@ -33,6 +35,10 @@ To stop the application and clean up resources:
 ```bash
 ./stop.sh
 ```
+
+## Generating class path for Cursor/VS Code Support
+
+Run `mvn eclipse:eclipse`.  This should produce a `.classpath` file at the root for your IDE.
 
 ## Manual Steps
 
