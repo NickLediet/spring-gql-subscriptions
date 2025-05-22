@@ -51,28 +51,4 @@ public class CounterService {
         log.info("Subscribing to counter Flux");
         return counterSink.asFlux();
     }
-    
-    /**
-     * Manually emit multiple values for testing purposes.
-     * This can be used to verify subscriptions are working.
-     */
-    public void emitTestSequence() {
-        log.info("Emitting test sequence...");
-        // Start with current value
-        counterSink.tryEmitNext(count);
-        
-        // Emit a sequence of test values with delays between them
-        new Thread(() -> {
-            try {
-                for (int i = 1; i <= 5; i++) {
-                    Thread.sleep(1000);
-                    int testValue = count + i;
-                    log.info("Emitting test value: {}", testValue);
-                    counterSink.tryEmitNext(testValue);
-                }
-            } catch (InterruptedException e) {
-                log.error("Test sequence interrupted", e);
-            }
-        }).start();
-    }
 }
