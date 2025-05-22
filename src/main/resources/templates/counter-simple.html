@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Counter WebSocket Test</title>
+</head>
+<body>
+    <h1>Simple Counter WebSocket Test</h1>
+    <div id="log" style="border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll; font-family: monospace;"></div>
+    <button id="connect">Connect</button>
+    <button id="disconnect" disabled>Disconnect</button>
+    <button id="increment" disabled>Increment Counter</button>
+    
+    <script>
+        const logElement = document.getElementById('log');
+        const connectButton = document.getElementById('connect');
+        const disconnectButton = document.getElementById('disconnect');
+        const incrementButton = document.getElementById('increment');
+        let socket;
+        
+        function log(message) {
+            const now = new Date().toISOString();
+            logElement.innerHTML += `<div>[${now}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[${now}] ${message}`);
+        }
+        
+        connectButton.addEventListener('click', function() {
+            // Create WebSocket connection
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/graphql`;
+            
+            log(`Connecting to WebSocket: ${wsUrl}`);
+            socket = new WebSocket(wsUrl);
+            
+            socket.onopen = function(e) {
+                log('WebSocket connection established');
+                
+                // Send connection init
+                const initMsg = JSON.stringify({
+                    type: 'connection_init',
+                    payload: {}
+                });
+                log(`Sending: ${initMsg}`);
+                socket.send(initMsg);
+                
+                setTimeout(() => {
+                    // Start subscription
+                    const subscribeMsg = JSON.stringify({
+                        id: '1',
+                        type: 'start',
+                        payload: {
+                            query: 'subscription { counter }'
+                        }
+                    });
+                    log(`Sending: ${subscribeMsg}`);
+                    socket.send(subscribeMsg);
+                }, 500);
+                
+                connectButton.disabled = true;
+                disconnectButton.disabled = false;
+                incrementButton.disabled = false;
+            };
+            
+            socket.onmessage = function(event) {
+                log(`Received: ${event.data}`);
+            };
+            
+            socket.onclose = function(event) {
+                log(`WebSocket connection closed: code=${event.code}, reason=${event.reason}`);
+                connectButton.disabled = false;
+                disconnectButton.disabled = true;
+                incrementButton.disabled = true;
+            };
+            
+            socket.onerror = function(error) {
+                log(`WebSocket error: ${error}`);
+            };
+        });
+        
+        disconnectButton.addEventListener('click', function() {
+            if (socket) {
+                // Send stop message for subscription
+                const stopMsg = JSON.stringify({
+                    id: '1',
+                    type: 'stop'
+                });
+                log(`Sending: ${stopMsg}`);
+                socket.send(stopMsg);
+                
+                // Close the socket
+                socket.close();
+                
+                connectButton.disabled = false;
+                disconnectButton.disabled = true;
+                incrementButton.disabled = true;
+            }
+        });
+        
+        incrementButton.addEventListener('click', function() {
+            log('Incrementing counter...');
+            
+            fetch('/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: 'mutation { incrementCount }'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                log(`Increment response: ${JSON.stringify(data)}`);
+            })
+            .catch(error => {
+                log(`Error incrementing: ${error}`);
+            });
+        });
+    </script>
+</body>
+</html> 

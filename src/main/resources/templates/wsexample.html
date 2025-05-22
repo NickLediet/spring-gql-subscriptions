@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <h1>WebSocket Echo</h1>
+    <input type="text" id="message" placeholder="Type something..." />
+    <button id="sendButton">Send</button>
+    <pre id="ws-output"></pre>
+</body>
+<script>
+    const socket = new WebSocket('ws://localhost:8080/ws/echo');
+    socket.onopen = e => {
+        socket.send('Client Connected')
+    }
+
+    socket.onmessage = function(event) {
+        const wsOutput = document.getElementById('ws-output');
+        wsOutput.textContent += event.data + '\n';
+
+        if (event.data === 'WS message 10') {
+            socket.close();
+            wsOutput.textContent += 'Socket source closed\n';
+        }
+    };
+
+    document.getElementById('sendButton').addEventListener('click', function() {
+        const message = document.getElementById('message').value;
+        socket.send(message);
+    });
+</script>
+</html> 

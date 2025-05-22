@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GraphQL Counter Subscription</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            line-height: 1.6;
+        }
+        #counter-value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #4285f4;
+            margin: 1rem 0;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 0.5rem;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        #log {
+            margin-top: 1rem;
+            background-color: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>GraphQL Counter Subscription</h1>
+    
+    <div>Current Counter Value: <span id="counter-value">-</span></div>
+    
+    <div>
+        <button id="increment-btn">Increment</button>
+        <button id="reset-btn">Reset to 0</button>
+        <button id="random-btn">Set Random Value</button>
+    </div>
+    
+    <h3>Connection Log:</h3>
+    <div id="log"></div>
+    
+    <script>
+        // DOM Elements
+        const counterValueElement = document.getElementById('counter-value');
+        const incrementBtn = document.getElementById('increment-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const randomBtn = document.getElementById('random-btn');
+        const logElement = document.getElementById('log');
+        
+        // Logger function
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // GraphQL Mutations
+        async function incrementCounter() {
+            const response = await fetch('/graphql', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: `mutation { incrementCount }`
+                })
+            });
+            const result = await response.json();
+            log(`Incremented counter. Result: ${JSON.stringify(result.data)}`);
+        }
+        
+        async function setCounter(value) {
+            const response = await fetch('/graphql', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: `mutation { setCount(count: ${value}) }`
+                })
+            });
+            const result = await response.json();
+            log(`Set counter to ${value}. Result: ${JSON.stringify(result.data)}`);
+        }
+        
+        // Event listeners
+        incrementBtn.addEventListener('click', incrementCounter);
+        resetBtn.addEventListener('click', () => setCounter(0));
+        randomBtn.addEventListener('click', () => {
+            const randomValue = Math.floor(Math.random() * 100);
+            setCounter(randomValue);
+        });
+        
+        // WebSocket for GraphQL Subscription
+        function setupSubscription() {
+            log('Setting up GraphQL subscription over WebSocket...');
+            
+            // Create WebSocket connection
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/graphql`;
+            const socket = new WebSocket(wsUrl);
+            
+            // Connection opened
+            socket.addEventListener('open', (event) => {
+                log('WebSocket connection established');
+                
+                // Send subscription initialization message
+                const subscriptionMsg = {
+                    type: 'connection_init',
+                    payload: {}
+                };
+                socket.send(JSON.stringify(subscriptionMsg));
+                
+                // Start subscription after initialization
+                setTimeout(() => {
+                    const startMsg = {
+                        id: '1',
+                        type: 'start',
+                        payload: {
+                            query: `subscription { counter }`
+                        }
+                    };
+                    socket.send(JSON.stringify(startMsg));
+                    log('Subscription started');
+                }, 500);
+            });
+            
+            // Listen for messages
+            socket.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                log(`Received: ${event.data}`);
+                
+                if (data.type === 'connection_ack') {
+                    log('Connection acknowledged by server');
+                } 
+                else if (data.type === 'data' && data.payload && data.payload.data) {
+                    const count = data.payload.data.counter;
+                    counterValueElement.textContent = count;
+                    log(`Counter updated to: ${count}`);
+                }
+            });
+            
+            // Connection closed
+            socket.addEventListener('close', (event) => {
+                log(`WebSocket connection closed: ${event.reason}`);
+                // Try to reconnect after a delay
+                setTimeout(setupSubscription, 3000);
+            });
+            
+            // Connection error
+            socket.addEventListener('error', (error) => {
+                log(`WebSocket error: ${error}`);
+            });
+            
+            return socket;
+        }
+        
+        // Start subscription when page loads
+        document.addEventListener('DOMContentLoaded', setupSubscription);
+    </script>
+</body>
+</html> 

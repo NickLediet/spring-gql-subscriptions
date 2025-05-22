@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello World</title>
+</head>
+<body>
+    <h1>Hello World (changed)!</h1>
+    <p>Welcome to the Spring Boot WebFlux application.</p>
+    <pre id="sse-output"></pre>
+</body>
+<script>
+    const eventSource = new EventSource('/sse/stream');
+    eventSource.onmessage = function(event) {
+        const sseOutput = document.getElementById('sse-output');
+        sseOutput.textContent += event.data + '\n';
+
+        if (event.data === 'SSE message 10') {
+            eventSource.close();
+            sseOutput.textContent += 'Event source closed\n';
+        }
+    };
+</script>
+</html> 

@@ -1,0 +1,17 @@
+
+type Counter {
+    count: Int
+}
+
+type Query {
+    currentCount: Counter
+}
+
+type Mutation {
+    setCount(count: Int!): Counter
+    incrementCount: Counter
+}
+
+type Subscription {
+    counter: Counter
+}
