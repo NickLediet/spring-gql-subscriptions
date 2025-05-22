@@ -2,7 +2,9 @@
 
 A simple Spring Boot WebFlux application with PostgreSQL database using Podman.
 
-See the [com.example.counter](./src/main/java/com/example/counter/) package for the most relevant code.
+See the [com.example.counter](./src/main/java/com/example/counter/) package for the most relevant code. 
+
+Additionally, the schema can be found [here](./src/main/resources/graphql/schema.graphqls)
 
 ## Prerequisites
 
